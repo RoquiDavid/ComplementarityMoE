@@ -317,9 +317,3 @@ For questions about the paper or code, please open an issue on GitHub.
 This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
-
-## 🌟 Star History
-
-If you find this work useful, please consider starring ⭐ the repository!
-
-[![Star History Chart](https://api.star-history.com/svg?repos=DavidRoqui/ComplementarityMoE&type=Date)](https://star-history.com/#DavidRoqui/ComplementarityMoE&Date)
