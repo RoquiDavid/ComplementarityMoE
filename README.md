@@ -1,6 +1,5 @@
 # ComplementarityMoE: Backward Transfer in Multimodal Continual Learning
 
-[![Paper](https://img.shields.io/badge/Paper-ESANN%202026-blue)](paper/ESANN2026_ComplementarityMoE.pdf)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.8+-yellow.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red.svg)](https://pytorch.org/)
