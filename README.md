@@ -7,8 +7,6 @@
 
 **Official implementation of "ComplementarityMoE: Backward Transfer in Multimodal Continual Learning via Barlow Twins Routing"**
 
-*Accepted at ESANN 2026 (European Symposium on Artificial Neural Networks)*
-
 Authors: **David Roqui**¹'², Nistor Grozavu¹, Ann Bourges³, Adèle Cormier³'⁴
 
 ¹ETIS, CY Cergy Paris Université | ²Fondation des Sciences du Patrimoine | ³C2RMF | ⁴EPITOPOS
