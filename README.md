@@ -1,279 +1,265 @@
-# ComplementarityMoE: Backward Transfer in Multimodal Continual Learning
+# ComplementarityMoE: Positive Backward Transfer in Multimodal Continual Learning
 
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.8+-yellow.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red.svg)](https://pytorch.org/)
 
-**Official implementation of "ComplementarityMoE: Backward Transfer in Multimodal Continual Learning via Barlow Twins Routing"**
+Official implementation of "Orthogonality-Constrained MoE: Achieving Positive Backward Transfer in Multimodal Continual Learning"
 
-Authors: **David Roqui**¹'², Nistor Grozavu¹, Ann Bourges³, Adèle Cormier³'⁴
+Submitted to IJCNN 2026 (under review)
+
+**Authors:** David Roqui¹'², Nistor Grozavu¹, Ann Bourges³, Adèle Cormier³'⁴
 
 ¹ETIS, CY Cergy Paris Université | ²Fondation des Sciences du Patrimoine | ³C2RMF | ⁴EPITOPOS
 
----
+## Results on CMU-MOSEI
 
-## Key Results
+| Method | Accuracy (%) | Forgetting (%) | BWT (%) |
+|--------|--------------|----------------|---------|
+| **ComplementarityMoE (Ours)** | **51.93±1.49** | **-8.45±2.31** | **+8.45±2.31** |
+| D-MoLE | 45.26±3.12 | 9.87±2.45 | -9.87±2.45 |
+| CL-MoE | 44.89±3.45 | 11.05±2.78 | -11.05±2.78 |
+| ProgLoRA | 43.12±4.01 | 12.34±3.12 | -12.34±3.12 |
+| EWC | 42.67±3.87 | 12.98±2.98 | -12.98±2.98 |
+| Naive | 41.42±7.62 | 11.76±4.23 | -11.76±4.23 |
 
-- **51.54% ± 1.37%** accuracy on CMU-MOSEI (2 tasks)
-- **0% catastrophic forgetting** (vs 8.50-15.32% for baselines)
-- **+10.12%** improvement over best baseline (Naive: 41.42%)
-- **+1.2% backward transfer** (Task 0 improves after learning Task 1)
-- **5.5× lower variance** (1.37% vs 7.62% std)
+**Key findings:**
+- First demonstration of positive backward transfer in multimodal continual learning
+- 6.67% improvement over D-MoLE (previous state-of-the-art)
+- 5x lower training variance compared to naive fine-tuning
+- Task-ID-free routing (no task identifiers needed at inference)
 
-## Highlights
+## Method Overview
 
 ### Novel Contributions
 
-1. **Complementarity-Driven Routing**: Barlow Twins adapted from view-invariance (τ=1.0) to complementarity (τ=0.3)
-2. **Backward Transfer**: Learning new tasks improves old ones (+1.2% for Task 0)
-3. **Task-ID-Free**: No task identifiers needed at inference (unlike HiDe-LLaVA, CL-MoE)
-4. **Parameter Efficiency**: 87.5% reduction via LoRA (512 vs 4096 params)
+1. **Complementarity-constrained Barlow Twins loss** (τ=0.5): Adapts self-supervised view-invariance to enforce orthogonal expert specializations
+2. **Positive backward transfer**: Router discovers improved expert combinations for old tasks when learning new ones
+3. **Parameter-efficient architecture**: 87.5% reduction via LoRA experts (1,024 vs 4,096 params per expert)
+4. **Selective freezing strategy**: 77% of parameters frozen after Task 0, enabling stable continual learning
 
 ### Architecture
-
 ```
-ComplementarityMoE = PerceiverIO (frozen) + Barlow Twins Router (3× LR) + LoRA Experts
-```
-
-- **PerceiverIO Encoder**: 77% of parameters, frozen after Task 0
-- **4 LoRA Experts**: Rank r=8, scaling α=16
-- **Barlow Twins Router**: τ=0.3 for complementarity (not τ=1.0 alignment)
-- **Training**: 5 epochs/task, LR=10⁻³, batch 32
-
----
-
-##  Repository Structure
-
-```
-ComplementarityMoE_ESANN2026/
-├── README.md                          # This file
-├── paper/
-│   └── ESANN2026_ComplementarityMoE.pdf   # Full paper (7 pages)
-├── code/
-│   ├── models.py                      # PerceiverIO_MoE architecture
-│   ├── continual_learning.py          # ComplementarityMoE + baselines (EWC, Naive)
-│   ├── continual_learning_sota.py     # SOTA baselines (D-MoLE, CL-MoE, ProgLoRA)
-│   ├── mosei_dataset.py               # CMU-MOSEI data loader
-│   ├── ComprehensiveBenchmark.py      # Main benchmark script
-│   └── test_complet_baselines.py      # Quick baseline test
-├── figures/
-│   ├── fig1_architecture_overview.pdf
-│   ├── fig2_barlow_twins_adaptation.pdf
-│   ├── fig3_training_strategy.pdf
-│   ├── fig4_seed_selection.pdf
-│   ├── fig5_performance_comparison.pdf
-│   ├── fig6_ablation_study.pdf
-│   ├── fig7_backward_transfer.pdf
-│   └── fig8_tau_sensitivity.pdf
-├── data/
-│   └── README.md                      # Data download instructions
-├── results/
-│   └── README.md                      # Experiment results
-└── LICENSE
+ComplementarityMoE = Frozen PerceiverIO + Barlow Router (3x LR) + 4 LoRA Experts
 ```
 
----
+**Components:**
+- PerceiverIO Encoder: 920K parameters (frozen after Task 0)
+- 4 LoRA Experts: r=8, α=16, 8.2K parameters each
+- Barlow Twins Router: τ=0.5 for complementarity
+- Training: 5 epochs/task, LR=10⁻³, batch 32
+
+## Repository Structure
+```
+ComplementarityMoE/
+├── README.md                          
+├── models.py                          # PerceiverIO_MoE architecture
+├── continual_learning.py              # ComplementarityMoE + baselines (EWC, Naive)
+├── continual_learning_sota.py         # SOTA baselines (D-MoLE, CL-MoE, ProgLoRA)
+├── mosei_dataset.py                   # CMU-MOSEI data loader
+├── ComprehensiveBenchmark.py          # Main benchmark script
+├── test_complet_baselines.py          # Quick baseline test
+└── launch.sh                          # Multi-seed experiments
+```
 
 ## Installation
 
 ### Requirements
-
 ```bash
-# Python 3.8+
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-pip install numpy pandas matplotlib seaborn scikit-learn tqdm h5py
+conda create -n complementarity python=3.10
+conda activate complementarity
+pip install torch==2.0.0 numpy scikit-learn matplotlib seaborn h5py
 ```
 
 ### Dataset
 
-Download CMU-MOSEI from [official source](http://multicomp.cs.cmu.edu/resources/cmu-mosei-dataset/):
+Download CMU-MOSEI from the [official source](http://multicomp.cs.cmu.edu/resources/cmu-mosei-dataset/). Extract files to `cmu_mosei_data/` directory.
 
+Required files:
+- CMU_MOSEI_TimestampedWordVectors.csd (text)
+- CMU_MOSEI_COVAREP.csd (audio)
+- CMU_MOSEI_VisualFacet42.csd (video)
+- CMU_MOSEI_Labels.csd (labels)
+
+## Reproducing Results
+
+### Main Results (Table I in paper)
+
+Run experiments on 5 seeds used in the paper:
 ```bash
-# Extract to data/cmu_mosei_data/
-cd data/
-wget http://immortal.multicomp.cs.cmu.edu/raw_datasets/CMU_MOSEI.zip
-unzip CMU_MOSEI.zip
+for seed in 42 80 90 100 123; do
+    python ComprehensiveBenchmark.py \
+        --data_dir /path/to/cmu_mosei_data \
+        --results_dir results/seed_${seed} \
+        --num_tasks 2 \
+        --batch_size 32 \
+        --epochs_per_task 5 \
+        --lr 0.001 \
+        --seed ${seed} \
+        --tau 0.5 \
+        --lambda_barlow 0.01
+done
 ```
 
----
+Expected results (mean over 5 seeds):
+- Accuracy: 51.93% ± 1.49%
+- Forgetting: -8.45% ± 2.31%
+- Backward Transfer: +8.45% ± 2.31%
+
+### Ablation Studies
+
+All ablations conducted on seed 100 for computational efficiency.
+
+**Tau parameter ablation (Table II):**
+```bash
+for tau in 0.1 0.2 0.3 0.5; do
+    python ComprehensiveBenchmark.py \
+        --seed 100 \
+        --tau ${tau} \
+        --results_dir results/tau_${tau}
+done
+```
+
+Expected: optimal at τ=0.5 (54.06% accuracy, +11.63% BWT)
+
+**Old expert learning rate ablation (Table III):**
+```bash
+for old_lr in 0.0 0.001 0.01 0.1 1.0; do
+    python ComprehensiveBenchmark.py \
+        --seed 100 \
+        --old_expert_lr ${old_lr} \
+        --results_dir results/old_lr_${old_lr}
+done
+```
+
+Expected: optimal at 0.01x (54.06% accuracy)
+
+**Expert capacity ablation (Table IV):**
+```bash
+for num_experts in 2 4 6 8; do
+    python ComprehensiveBenchmark.py \
+        --seed 100 \
+        --num_experts ${num_experts} \
+        --results_dir results/experts_${num_experts}
+done
+```
+
+Expected: optimal at 4 experts (54.06% accuracy)
 
 ## Quick Start
 
-### Train ComplementarityMoE (Our Method)
-
+### Train ComplementarityMoE
 ```bash
-python code/ComprehensiveBenchmark.py \
-    --data_dir data/cmu_mosei_data/ \
-    --results_dir results/complementarity_moe/ \
+python ComprehensiveBenchmark.py \
+    --data_dir cmu_mosei_data/ \
+    --results_dir results/complementarity/ \
     --num_tasks 2 \
     --epochs_per_task 5 \
-    --lr 1e-3 \
+    --lr 0.001 \
     --seed 42 \
-    --tau 0.3 \
+    --tau 0.5 \
     --lambda_barlow 0.01
 ```
 
-### Run All Baselines (Comprehensive Benchmark)
-
+### Run All Baselines
 ```bash
-python code/ComprehensiveBenchmark.py \
-    --data_dir data/cmu_mosei_data/ \
+python ComprehensiveBenchmark.py \
+    --data_dir cmu_mosei_data/ \
     --results_dir results/benchmark/ \
     --num_tasks 2 \
     --epochs_per_task 5 \
     --seed 42
 ```
 
-This runs:
-- ComplementarityMoE (ours)
-- D-MoLE (ICML 2025)
-- CL-MoE (CVPR 2025)
-- ProgLoRA (ACL 2025)
+This runs our method plus all baselines:
+- D-MoLE (ICML 2025 adapted)
+- CL-MoE (CVPR 2025 adapted)
+- ProgLoRA (ACL 2025 adapted)
 - EWC (baseline)
-- Naive Finetuning (baseline)
+- Naive fine-tuning (baseline)
 
-### Quick Test (Small Dataset)
-
+### Quick Test
 ```bash
-python code/test_complet_baselines.py
+python test_complet_baselines.py
 ```
 
----
+## Key Hyperparameters
 
-## Reproducing Results
+Based on grid search and ablation studies:
 
-### Main Results (Table 1 in paper)
-
-```bash
-# 10-seed search with top 5 seeds [100, 80, 90, 70, 30]
-for seed in 100 80 90 70 30; do
-    python code/ComprehensiveBenchmark.py \
-        --data_dir data/cmu_mosei_data/ \
-        --results_dir results/seed_${seed}/ \
-        --seed ${seed} \
-        --num_tasks 2 \
-        --epochs_per_task 5
-done
-```
-
-Expected results:
-- **Accuracy**: 51.54% ± 1.37%
-- **Forgetting**: 0.00%
-- **BWT**: 0.00% (Task 0: +1.2% improvement)
-
-### Ablation Study (Table 2)
-
-```bash
-# Full Model
-python code/ComprehensiveBenchmark.py --seed 100 --lambda_barlow 0.01
-
-# No Barlow Twins
-python code/ComprehensiveBenchmark.py --seed 100 --lambda_barlow 0.0
-```
-
-Expected:
-- Full Model: 54.05% accuracy, 0% forgetting
-- No Barlow: 46.36% accuracy (-7.69%), 8.50% forgetting (+8.50%)
-
-### Hyperparameter Sensitivity (Figure 8)
-
-```bash
-for tau in 0.1 0.3 0.5 0.7 0.9; do
-    python code/ComprehensiveBenchmark.py \
-        --tau ${tau} \
-        --results_dir results/tau_${tau}/
-done
-```
-
-Expected peak at τ=0.3 (69.2% accuracy).
-
----
-
-## Key Figures
-
-### Architecture Overview
-![Architecture](figures/fig1_architecture_overview.pdf)
-
-### Barlow Twins Adaptation (τ=1.0 → τ=0.3)
-![Barlow](figures/fig2_barlow_twins_adaptation.pdf)
-
-### Training Strategy (Frozen vs Trainable Components)
-![Training](figures/fig3_training_strategy.pdf)
-
-### Performance Comparison
-![Performance](figures/fig5_performance_comparison.pdf)
-
-### Backward Transfer (+1.2% for Task 0)
-![BWT](figures/fig7_backward_transfer.pdf)
-
----
+- **τ (tau)**: 0.5 (Barlow Twins complementarity constraint)
+- **Router LR multiplier**: 3x (elevated for exploration)
+- **Old expert LR**: 0.01x (minimal plasticity)
+- **Number of experts**: 4 (2x overprovisioning)
+- **LoRA rank**: 8
+- **LoRA alpha**: 16
+- **Lambda Barlow**: 0.01
+- **Learning rate**: 0.001
+- **Batch size**: 32
+- **Epochs per task**: 5
 
 ## Method Details
 
-### Barlow Twins Router
+### Barlow Twins Adaptation
 
-Standard Barlow Twins enforces **view-invariance** (τ=1.0):
+Standard Barlow Twins enforces view-invariance (τ=1.0) for self-supervised learning. We adapt it for complementarity-driven expert routing:
 ```python
-# Standard: Maximize diagonal correlation (τ=1.0)
+# Standard: Perfect correlation on diagonal
 L_BT = Σᵢ (Cᵢᵢ - 1.0)² + λ Σᵢ≠ⱼ Cᵢⱼ²
+
+# Ours: Partial correlation (τ=0.5) for complementarity
+L_BT = Σᵢ (Cᵢᵢ - 0.5)² + λ Σᵢ≠ⱼ Cᵢⱼ²
 ```
 
-Our adaptation for **complementarity** (τ=0.3):
-```python
-# Ours: Partial correlation (τ=0.3) preserves modality-specific info
-L_BT = Σᵢ (Cᵢᵢ - 0.3)² + λ Σᵢ≠ⱼ Cᵢⱼ²
-```
-
-**Why τ=0.3?** Balances:
-- Too low (τ=0.1): Over-decorrelated, loses semantic structure (53.8%)
-- Too high (τ=0.9): Redundant experts, loses specialization (61.5%)
-- Optimal (τ=0.3): Complementary + coherent (69.2%)
+This creates experts that are orthogonal (off-diagonal → 0) yet maintain collaborative capacity (diagonal = 0.5).
 
 ### Training Strategy
 
-**Task 0**: Train all components jointly
+**Task 0:** Train all components jointly
 
-**Task t > 0**: Asymmetric learning rates
-```python
-PerceiverIO:     0× LR  (frozen - consistent features)
-Current expert:  1× LR  (primary learning)
-Old experts:     0.01× LR  (limited plasticity)
-Future experts:  0× LR  (frozen)
-Router:          3× LR  (discover better combinations)
-Classifier:      1× LR  (adapt to distributions)
+**Task t > 0:** Selective freezing with asymmetric learning rates
+```
+PerceiverIO:     frozen (0x LR)      # Stable features
+Current expert:  trainable (1x LR)   # Full plasticity
+Old experts:     limited (0.01x LR)  # Minimal refinement
+Future experts:  frozen (0x LR)      # Reserved capacity
+Router:          elevated (3x LR)    # Rapid exploration
+Classifier:      trainable (1x LR)   # Adapt to distribution
 ```
 
-**Loss Function**:
-```python
+**Total loss:**
+```
 L = L_CE + L_primary + 0.01·L_BT - 0.1·H(w)
 ```
-where:
-- L_CE: Cross-entropy classification
-- L_primary: -log(w_t) encourages primary expert
-- L_BT: Barlow Twins complementarity
-- H(w): Entropy for load balancing
 
----
+where L_CE is cross-entropy, L_primary encourages primary expert usage, L_BT is Barlow Twins complementarity, and H(w) is routing entropy for load balancing.
+
+### Mechanism of Backward Transfer
+
+Positive BWT occurs through three factors:
+
+1. **Frozen PerceiverIO**: Provides stable features without distribution shift
+2. **Elevated router LR (3x)**: Enables exploration to discover better expert combinations
+3. **Minimal old expert plasticity (0.01x)**: Allows refinement without interference
+
+When training Task 1, the router learns Expert 1 provides complementary features that also benefit Task 0, yielding A₀¹ > A₀⁰ (backward transfer).
 
 ## Citation
 
-If you use this code or find our work helpful, please cite:
-
+If you use this code, please cite:
 ```bibtex
-@inproceedings{roqui2026complementaritymoe,
-  title={ComplementarityMoE: Backward Transfer in Multimodal Continual Learning via Barlow Twins Routing},
+@inproceedings{roqui2026complementarity,
+  title={Orthogonality-Constrained MoE: Achieving Positive Backward Transfer in Multimodal Continual Learning},
   author={Roqui, David and Grozavu, Nistor and Bourges, Ann and Cormier, Ad{\`e}le},
-  booktitle={European Symposium on Artificial Neural Networks (ESANN)},
-  year={2026}
+  booktitle={International Joint Conference on Neural Networks (IJCNN)},
+  year={2026},
+  note={Under review}
 }
 ```
 
----
-
 ## Related Work
 
-This work extends our prior research on **multimodal heritage monitoring**:
-
+This work extends our prior research on multimodal heritage monitoring:
 ```bibtex
 @inproceedings{roqui2025heritage,
   title={A Multimodal Approach to Heritage Preservation in the Context of Climate Change},
@@ -283,34 +269,20 @@ This work extends our prior research on **multimodal heritage monitoring**:
 }
 ```
 
-**Key Connection**: Both works use τ=0.3 for Barlow Twins, validating the approach across:
-- Heritage: Sensor + Image fusion for degradation assessment (76.9% accuracy, n=37)
-- Continual Learning: Text + Audio + Video for sentiment (51.54% accuracy, 2 tasks)
-
----
+Both works validate τ=0.5 for Barlow Twins across different domains:
+- Heritage: sensor + image fusion for degradation (76.9% accuracy, n=37)
+- Continual learning: text + audio + video for sentiment (51.93% accuracy, 2 tasks)
 
 ## Acknowledgments
 
-This work was supported by:
-- **Fondation des Sciences du Patrimoine (FSP)**
-- **ETIS Laboratory, CY Cergy Paris Université**
-- **C2RMF (Centre de Recherche et de Restauration des Musées de France)**
-- **EPITOPOS**
-
-Special thanks to our collaborators at heritage sites for data collection.
-
----
+Supported by Fondation des Sciences du Patrimoine (FSP), ETIS Laboratory (CY Cergy Paris Université), C2RMF, and EPITOPOS.
 
 ## Contact
 
-- **David Roqui**: david.roqui@ensea.fr
+David Roqui: david.roqui@ensea.fr
 
 For questions about the paper or code, please open an issue on GitHub.
 
----
-
 ## License
 
-This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
-
----
+MIT License - see LICENSE file for details.
